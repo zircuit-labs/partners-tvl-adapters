@@ -4,15 +4,15 @@ This repository aims to serve as a source for all adapters we use to fetch TVL b
 
 ## How to add new adapters?
 
-The process to add a new adapters is provide a script similar to what you can see here in the [adapter example](https://github.com/zircuit-labs/partners-tvl-adapters/tree/main/adapters/tvl-snapshot-elara/).
+The process to add a new adapter is to provide a script similar to [adapter example](https://github.com/zircuit-labs/partners-tvl-adapters/tree/main/adapters/tvl-snapshot-elara/).
 
-Here is a onboarding checklist:
+Onboarding checklist:
 
-1.  Set up a subquery indexer (e.g. Goldsky Subgraph)
+1.  Set up a subquery indexer (e.g., Goldsky Subgraph)
     1. Follow the docs here: https://docs.goldsky.com/guides/create-a-no-code-subgraph
     2. General Steps
-        1. Create an account at app.goldsky.com
-        2. Deploy a subgraph or migrate an existing subgraph - https://docs.goldsky.com/subgraphs/introduction
+        1. Create an account at https://app.goldsky.com
+        2. Deploy a subgraph or migrate an existing subgraph: https://docs.goldsky.com/subgraphs/introduction
         3. Use the slugs `zircuit-testnet` and `zircuit` when deploying the config
 2.  Prepare Subquery query code according to the Data Requirement section below.
 3.  Submit your response as a Pull Request to: https://github.com/zircuit-labs/partners-tvl-adapters.git
@@ -31,14 +31,14 @@ Here is a onboarding checklist:
 ### Data Requirements:
 Goal: **Hourly snapshot of TVL by User by Asset**
 
-Please read the instructions carefully, and contact us if you have any questions.
+Please read the instructions carefully, and contact Zircuit if you have any questions.
 
 For each protocol, we are looking for the following:
 1. Query that fetches all relevant events required to calculate User TVL in the Protocol at least at hourly level.
     - **Protocols are responsible for providing the correct data. Incorrect data can lead to users not being able to claim rewards.**
     - **Protocols are responsible of filtering non-user addresses, like smart contracts, pools, etc. Otherwise, the total points will be affected, blocking rewards.** (e.g. zero address, pool address, etc.)
-2. Code that uses the above query, fetches all the data and converts it to csv file in below given format.
-3. Balances should be formatted in wei. Do not convert it or truncate it.
+2. Code that uses the above query, fetches all the data and converts it to CSV file in the format specified below.
+3. Balances should be formatted in wei. Do not convert or truncate the balance.
 4. Output file should be named `tvl-snapshot-<protocol_name>.csv`
 5. Output file should be generated in the `out` folder in your adapter folder.
 
