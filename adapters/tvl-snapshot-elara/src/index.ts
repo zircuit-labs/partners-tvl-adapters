@@ -40,6 +40,7 @@ const OUTPUT_FILE = "../out/elara_tvl_snapshot.csv";
 const getData = async () => {
   const csvRows: CSVRow[] = [];
   console.log("Fetching data from subgraph...")
+  
   const [exchangeRates, balanceChanges] = await Promise.all([
     getExchangeRatesBeforeBlock(END_BLOCK, CHAINS.ZIRCUIT, PROTOCOLS.ELARA),
     getBalanceChangesBeforeBlock(END_BLOCK, CHAINS.ZIRCUIT, PROTOCOLS.ELARA)
@@ -70,6 +71,10 @@ const getData = async () => {
       });
     });
   }
+
+  // Create output directory if it doesn't exist
+  const outputDir = path.resolve(__dirname, "../out");
+  fs.mkdirSync(outputDir, { recursive: true });
 
   // Write the CSV output to a file
   const outputPath = path.resolve(__dirname, OUTPUT_FILE);
