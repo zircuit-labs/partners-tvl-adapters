@@ -47,7 +47,7 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}
-        aws-region: eu-north-1
+        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Install adapter dependencies
       run: |
