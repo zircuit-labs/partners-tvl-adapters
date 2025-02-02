@@ -28,7 +28,7 @@ const prepareBlockNumbersArr = (startBlockNumber: number, interval: number, endB
   return blockNumbers;
 };
 
-const INITIAL_BLOCK = 7500000; // Picked arbirary block need to chat with team - 4904060
+const INITIAL_BLOCK = 6790475; // Block where we start to pick up data
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 
 const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
