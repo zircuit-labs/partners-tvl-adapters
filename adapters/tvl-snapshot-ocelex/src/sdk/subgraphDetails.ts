@@ -1,22 +1,5 @@
-import { CHAINS, PROTOCOLS, SUBGRAPH_URLS } from './config';
-
-export interface ExchangeRate {
-  id: string;
-  poolAddress: string;
-  tokenAddress: string;
-  rate: bigint;
-  blockTimestamp: bigint;
-  blockNumber: bigint;
-}
-
-export interface BalanceChange {
-  id: string;
-  token: string;
-  user: string;
-  amount: bigint;
-  blockTimestamp: bigint;
-  blockNumber: bigint;
-}
+import { CHAINS, PROTOCOLS, SUBGRAPH_URLS, User, UserClassicPosition, ConcentratedPosition, UserConcentratedPosition } from './config';
+import { parseUnits } from 'viem';
 
 const paginatedQuery = async <T>(
   subgraphUrl: string,
@@ -55,32 +38,6 @@ const paginatedQuery = async <T>(
   return result;
 };
 
-export interface LiquidityPosition {
-  id: string;
-  gauge: {
-    id: string;
-    token0: {
-      symbol: string;
-      id: string;
-    };
-    token1: {
-      symbol: string;
-      id: string;
-    };
-    pool: string;
-  };
-  amount: string;
-  userToken0: string;
-  userToken1: string;
-  userToken0Decimals: string;
-  userToken1Decimals: string;
-}
-
-export interface User {
-  id: string;
-  liquidityPositions: LiquidityPosition[];
-}
-
 export const getBlockTimestamp = async (blockNumber: number): Promise<number> => {
   const query = `query TimestampForBlock {
     blocks(
@@ -105,13 +62,12 @@ export const getBlockTimestamp = async (blockNumber: number): Promise<number> =>
   return Number(data.data.blocks[0].timestamp);
 };
 
-export const getUsersWithLiquidityPositions = async (
+export const getUsersWithGaugeLiquidityPositions = async (
   blockNumber: number,
   chainId: CHAINS,
-  protocol: PROTOCOLS,
   minAmount = 0,
 ): Promise<{ users: User[]; timestamp: number }> => {
-  const subgraphUrl = SUBGRAPH_URLS[chainId][protocol];
+  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_GAUGES];
   const blockQuery = blockNumber !== 0 ? `block: {number: ${blockNumber}}` : '';
   const amountQuery = minAmount !== 0 ? `where: {liquidityPositions_: {amount_gte: ${minAmount}}}` : '';
 
@@ -151,4 +107,139 @@ export const getUsersWithLiquidityPositions = async (
   const timestamp = await getBlockTimestamp(blockNumber);
 
   return { users, timestamp };
+};
+
+export const getUserClassicPositions = async (blockNumber: number, chainId: CHAINS): Promise<UserClassicPosition[]> => {
+  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_CLASSIC_POOLS];
+  const queryTemplate = `{
+    liquidityPositions(
+      first: {{limit}},
+      skip: {{skip}},
+      where: { liquidityTokenBalance_gt: 0 },
+      block: { number: {{blockNumber}} }
+    ) {
+      liquidityTokenBalance
+      user {
+        id
+      }
+      pair {
+        totalSupply
+        reserveUSD
+        reserve0
+        reserve1
+        token0 {
+          id
+          decimals
+        }
+        token1 {
+          id
+          decimals
+        }
+      }
+    }
+  }`;
+
+  const positions = await paginatedQuery<any>(subgraphUrl, queryTemplate, blockNumber, 'liquidityPositions');
+
+  return positions.map((position) => {
+    const userShare = BigInt(parseUnits(position.liquidityTokenBalance, 18).toString()) * BigInt(1e18) / BigInt(parseUnits(position.pair.totalSupply, 18).toString());
+    const userToken0Balance = (BigInt(parseUnits(position.pair.reserve0, Number(position.pair.token0.decimals)).toString()) * userShare) / BigInt(1e18);
+    const userToken1Balance = (BigInt(parseUnits(position.pair.reserve1, Number(position.pair.token1.decimals)).toString()) * userShare) / BigInt(1e18);
+
+    return {
+      id: position.user.id,
+      amount: position.liquidityTokenBalance,
+      token0: {
+        address: position.pair.token0.id,
+        balance: userToken0Balance.toString(),
+      },
+      token1: {
+        address: position.pair.token1.id,
+        balance: userToken1Balance.toString(),
+      },
+    };
+  });
+};
+
+const getConcentratedPositionReserves = (position: ConcentratedPosition) => {
+  const liquidity = +position.liquidity;
+  const _sqrtPrice = +position.pool.sqrtPrice;
+  const currentTick = +position.pool.tick;
+  const tickLower = +position.tickLower.tickIdx;
+  const tickUpper = +position.tickUpper.tickIdx;
+
+  let reserve0 = 0n;
+  let reserve1 = 0n;
+
+  if (liquidity === 0) {
+    return { reserve0, reserve1 };
+  }
+
+  const sqrtRatioA = Math.sqrt(1.0001 ** tickLower);
+  const sqrtRatioB = Math.sqrt(1.0001 ** tickUpper);
+  const sqrtPrice = _sqrtPrice / 2 ** 96;
+
+  // Only return active TVL
+  if (currentTick >= tickLower && currentTick < tickUpper) {
+    reserve0 = BigInt(
+      Math.floor(
+        liquidity * ((sqrtRatioB - sqrtPrice) / (sqrtPrice * sqrtRatioB)),
+      ),
+    );
+    reserve1 = BigInt(Math.floor(liquidity * (sqrtPrice - sqrtRatioA)));
+  }
+
+  return { reserve0, reserve1 };
+};
+
+export const getUserConcentratedPositions = async (blockNumber: number, chainId: CHAINS): Promise<UserConcentratedPosition[]> => {
+  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_CONCENTRATED_POOLS];
+  const queryTemplate = `{
+    positions(
+      first: {{limit}},
+      skip: {{skip}},
+      where: { liquidity_gt: 0 },
+      block: { number: {{blockNumber}} }
+    ) {
+      liquidity
+      owner
+      pool {
+        sqrtPrice
+        tick
+        token0 {
+          id
+          decimals
+        }
+        token1 {
+          id
+          decimals
+        }
+      }
+      tickLower {
+        tickIdx
+      }
+      tickUpper {
+        tickIdx
+      }
+    }
+  }`;
+
+  const positions = await paginatedQuery<ConcentratedPosition>(subgraphUrl, queryTemplate, blockNumber, 'positions');
+
+  return positions.map((position) => {
+    const { reserve0, reserve1 } = getConcentratedPositionReserves(position);
+
+    return {
+      id: position.owner,
+      amount: position.liquidity,
+      token0: {
+        address: position.pool.token0.id,
+        balance: reserve0.toString(),
+      },
+      token1: {
+        address: position.pool.token1.id,
+        balance: reserve1.toString(),
+      },
+    };
+  });
 };

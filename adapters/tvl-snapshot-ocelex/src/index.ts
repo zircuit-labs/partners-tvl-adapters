@@ -3,20 +3,8 @@ import path from 'path';
 import { write } from 'fast-csv';
 import { createPublicClient, http } from 'viem';
 import { zircuit } from 'viem/chains';
-import { CHAINS, PROTOCOLS } from './sdk/config';
-import { getUsersWithLiquidityPositions } from './sdk/subgraphDetails';
-
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
-
-interface CSVRow {
-  user: string;
-  token_address: string;
-  block: number;
-  token_balance: string;
-  timestamp: number;
-}
+import { CHAINS, CSVRow } from './sdk/config';
+import { getUserClassicPositions, getUserConcentratedPositions, getUsersWithGaugeLiquidityPositions } from './sdk/subgraphDetails';
 
 const prepareBlockNumbersArr = (startBlockNumber: number, interval: number, endBlockNumber: number) => {
   const blockNumbers = [];
@@ -28,7 +16,7 @@ const prepareBlockNumbersArr = (startBlockNumber: number, interval: number, endB
   return blockNumbers;
 };
 
-const INITIAL_BLOCK = 6790475; // Block where we start to pick up data
+const INITIAL_BLOCK = 9290475 + 36000; // Block where we start to pick up data
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 
 const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
@@ -49,7 +37,10 @@ const getData = async () => {
       console.log(`Processing block ${block}: ${index + 1} of ${snapshotBlocks.length}`);
 
       try {
-        const { users, timestamp } = await getUsersWithLiquidityPositions(block, CHAINS.ZIRCUIT, PROTOCOLS.OCELEX);
+        const { users, timestamp } = await getUsersWithGaugeLiquidityPositions(block, CHAINS.ZIRCUIT);
+        const classicPositions = await getUserClassicPositions(block, CHAINS.ZIRCUIT);
+        const concentratedPositions = await getUserConcentratedPositions(block, CHAINS.ZIRCUIT);
+        console.log(concentratedPositions[0]);
 
         if (!users || users.length === 0) {
           console.log(`No data found for block ${block}, skipping...`);
@@ -79,6 +70,56 @@ const getData = async () => {
                 timestamp,
               });
             }
+          }
+        }
+
+        // Process classic positions
+        for (const pos of classicPositions) {
+          // Add row for token0
+          if (pos.token0.balance !== '0') {
+            tempRows.push({
+              user: pos.id.split('-')[0], // Extract user address from position ID
+              token_address: pos.token0.address,
+              block,
+              token_balance: pos.token0.balance,
+              timestamp,
+            });
+          }
+
+          // Add row for token1
+          if (pos.token1.balance !== '0') {
+            tempRows.push({
+              user: pos.id.split('-')[0], // Extract user address from position ID
+              token_address: pos.token1.address,
+              block,
+              token_balance: pos.token1.balance,
+              timestamp,
+            });
+          }
+        }
+
+        // Process concentrated positions
+        for (const pos of concentratedPositions) {
+          // Add row for token0
+          if (pos.token0.balance !== '0') {
+            tempRows.push({
+              user: pos.id,
+              token_address: pos.token0.address,
+              block,
+              token_balance: pos.token0.balance,
+              timestamp,
+            });
+          }
+
+          // Add row for token1
+          if (pos.token1.balance !== '0') {
+            tempRows.push({
+              user: pos.id,
+              token_address: pos.token1.address,
+              block,
+              token_balance: pos.token1.balance,
+              timestamp,
+            });
           }
         }
       } catch (error) {
