@@ -6,7 +6,7 @@ export const enum PROTOCOLS {
   BLOCKS = 0,
   OCELEX_CLASSIC_POOLS = 1,
   OCELEX_CONCENTRATED_POOLS = 2,
-  OCELEX_GAUGES = 3,
+  OCELEX_HELPER = 3,
 }
 
 // SUBGRAPH URLs
@@ -18,8 +18,8 @@ export const SUBGRAPH_URLS = {
       'https://api.goldsky.com/api/public/project_cltyhthusbmxp01s95k9l8a1u/subgraphs/ocelex/1.0.0/gn',
     [PROTOCOLS.OCELEX_CONCENTRATED_POOLS]:
       'https://api.goldsky.com/api/public/project_cltyhthusbmxp01s95k9l8a1u/subgraphs/ocelex-cl/1.0.0/gn',
-    [PROTOCOLS.OCELEX_GAUGES]:
-      'https://api.goldsky.com/api/public/project_cltyhthusbmxp01s95k9l8a1u/subgraphs/ocelex-helper/0.0.1/gn',
+    [PROTOCOLS.OCELEX_HELPER]:
+      'https://api.goldsky.com/api/public/project_cltyhthusbmxp01s95k9l8a1u/subgraphs/ocelex-helper/0.0.2/gn',
   },
 };
 
@@ -66,6 +66,32 @@ export interface GaugeLiquidityPosition {
 export interface GaugeLiquidityPositionByUser {
   id: string;
   liquidityPositions: GaugeLiquidityPosition[];
+}
+
+export interface PreMiningPosition {
+  id: string;
+  premining: {
+    id: string;
+    token0: {
+      symbol: string;
+      id: string;
+    };
+    token1: {
+      symbol: string;
+      id: string;
+    };
+    pool: string;
+  };
+  amount: string;
+  userToken0: string;
+  userToken1: string;
+  userToken0Decimals: string;
+  userToken1Decimals: string;
+}
+
+export interface PreMiningPositionByUser {
+  id: string;
+  liquidityPositions: PreMiningPosition[];
 }
 
 export interface CSVRow {
@@ -137,4 +163,5 @@ export interface BlockData {
   gaugePositions: GaugeLiquidityPositionByUser[];
   classicPositions: UserClassicPosition[];
   concentratedPositions: UserConcentratedPosition[];
+  preMiningPositions: PreMiningPositionByUser[];
 }

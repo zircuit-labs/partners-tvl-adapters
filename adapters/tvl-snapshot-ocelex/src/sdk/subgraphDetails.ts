@@ -6,6 +6,7 @@ import {
   UserClassicPosition,
   ConcentratedPosition,
   UserConcentratedPosition,
+  PreMiningPositionByUser,
 } from './config';
 import { parseUnits } from 'viem';
 
@@ -75,7 +76,7 @@ export const getUsersWithGaugeLiquidityPositions = async (
   chainId: CHAINS,
   minAmount = 0,
 ): Promise<GaugeLiquidityPositionByUser[]> => {
-  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_GAUGES];
+  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_HELPER];
   const blockQuery = blockNumber !== 0 ? `block: {number: ${blockNumber}}` : '';
   const amountQuery = minAmount !== 0 ? `where: {liquidityPositions_: {amount_gte: ${minAmount}}}` : '';
 
@@ -115,6 +116,55 @@ export const getUsersWithGaugeLiquidityPositions = async (
     queryTemplate,
     blockNumber,
     'users',
+  );
+  return positions;
+};
+
+export const getUserPreMiningPositions = async (
+  blockNumber: number,
+  chainId: CHAINS,
+  minAmount = 0,
+): Promise<PreMiningPositionByUser[]> => {
+  const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_HELPER];
+  const blockQuery = blockNumber !== 0 ? `block: {number: ${blockNumber}}` : '';
+  const amountQuery = minAmount !== 0 ? `where: {liquidityPositions_: {amount_gte: ${minAmount}}}` : '';
+
+  const queryTemplate = `{
+    preMiningUsers(
+      ${blockQuery}
+      first: {{limit}},
+      skip: {{skip}}
+      ${amountQuery}
+    ) {
+      id
+      liquidityPositions {
+        id
+        premining {
+          id
+          token0 {
+            symbol
+            id
+          }
+          token1 {
+            symbol
+            id
+          }
+          pool
+        }
+        amount
+        userToken0
+        userToken1
+        userToken0Decimals
+        userToken1Decimals
+      }
+    }
+  }`;
+
+  const positions = await paginatedQuery<PreMiningPositionByUser>(
+    subgraphUrl,
+    queryTemplate,
+    blockNumber,
+    'preMiningUsers',
   );
   return positions;
 };

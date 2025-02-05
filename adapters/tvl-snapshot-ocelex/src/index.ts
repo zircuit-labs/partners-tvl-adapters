@@ -7,6 +7,7 @@ import {
   getUserConcentratedPositions,
   getUsersWithGaugeLiquidityPositions,
   getBlockTimestamp,
+  getUserPreMiningPositions,
 } from './sdk/subgraphDetails';
 
 // Constants
@@ -20,8 +21,10 @@ const processBlockData = async (block: number): Promise<BlockData | null> => {
     const gaugePositions = await getUsersWithGaugeLiquidityPositions(block, CHAINS.ZIRCUIT);
     const classicPositions = await getUserClassicPositions(block, CHAINS.ZIRCUIT);
     const concentratedPositions = await getUserConcentratedPositions(block, CHAINS.ZIRCUIT);
+    const preMiningPositions = await getUserPreMiningPositions(block, CHAINS.ZIRCUIT);
 
-    if (gaugePositions.length === 0 && classicPositions.length === 0 && concentratedPositions.length === 0) {
+    if (gaugePositions.length === 0 && classicPositions.length === 0 && 
+        concentratedPositions.length === 0 && preMiningPositions.length === 0) {
       console.log(`No data found for block ${block}, skipping...`);
       return null;
     }
@@ -32,6 +35,7 @@ const processBlockData = async (block: number): Promise<BlockData | null> => {
       gaugePositions,
       classicPositions,
       concentratedPositions,
+      preMiningPositions,
     };
   } catch (error) {
     console.error(`Error processing block ${block}:`, error);
@@ -47,6 +51,17 @@ const processPositions = (blockData: BlockData): TokenBalance[] => {
     for (const pos of user.liquidityPositions) {
       const token0Balance = processTokenBalance(pos.userToken0, user.id, pos.gauge.token0.id);
       const token1Balance = processTokenBalance(pos.userToken1, user.id, pos.gauge.token1.id);
+
+      if (token0Balance) balances.push(token0Balance);
+      if (token1Balance) balances.push(token1Balance);
+    }
+  }
+
+  // Process premining positions
+  for (const user of blockData.preMiningPositions) {
+    for (const pos of user.liquidityPositions) {
+      const token0Balance = processTokenBalance(pos.userToken0, user.id, pos.premining.token0.id);
+      const token1Balance = processTokenBalance(pos.userToken1, user.id, pos.premining.token1.id);
 
       if (token0Balance) balances.push(token0Balance);
       if (token1Balance) balances.push(token1Balance);
