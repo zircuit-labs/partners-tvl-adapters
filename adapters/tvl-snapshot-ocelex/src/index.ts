@@ -25,7 +25,7 @@ import {
 } from './sdk/subgraphDetails';
 
 // Constants
-const INITIAL_BLOCK = 8904075; // Block where we start to pick up data
+const INITIAL_BLOCK = 4904075; // Block where we start to pick up data
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
 
