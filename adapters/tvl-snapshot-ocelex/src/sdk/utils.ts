@@ -1,7 +1,30 @@
 import fs from 'fs';
 import path from 'path';
 import { write } from 'fast-csv';
-import { CSVRow, TokenBalance } from './config';
+import { CSVRow, TokenBalance, LensResponse } from './config';
+import { PublicClient, type Abi } from 'viem';
+import { CONTRACTS } from './config';
+import { PAIR_API_ABI } from '../sdk/abis/PairAPIABI';
+
+export const getAllPairData = async (
+  pairs: string[],
+  client: PublicClient,
+  blockNumber: number,
+): Promise<Record<string, LensResponse>> => {
+  const calls = pairs.map((pair) => ({
+    address: CONTRACTS.PAIR_LENS as `0x${string}`,
+    abi: PAIR_API_ABI as Abi,
+    functionName: 'getPair',
+    args: [pair, '0x0000000000000000000000000000000000000000'],
+  }));
+
+  const lensResponses = await client.multicall({
+    contracts: calls,
+    blockNumber: blockNumber ? BigInt(blockNumber) : undefined,
+  });
+
+  return Object.fromEntries(lensResponses.map((response, index) => [pairs[index], response.result as LensResponse]));
+};
 
 export const prepareBlockNumbersArr = (
   startBlockNumber: number,

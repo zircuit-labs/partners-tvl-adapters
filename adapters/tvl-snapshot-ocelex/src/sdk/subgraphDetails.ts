@@ -2,10 +2,9 @@ import {
   CHAINS,
   PROTOCOLS,
   SUBGRAPH_URLS,
-  GaugeLiquidityPositionByUser,
-  UserClassicPosition,
+  UserFormattedPosition,
   ConcentratedPosition,
-  UserConcentratedPosition,
+  GaugeLiquidityPositionByUser,
   PreMiningPositionByUser,
 } from './config';
 import { parseUnits } from 'viem';
@@ -169,7 +168,10 @@ export const getUserPreMiningPositions = async (
   return positions;
 };
 
-export const getUserClassicPositions = async (blockNumber: number, chainId: CHAINS): Promise<UserClassicPosition[]> => {
+export const getUserClassicPositions = async (
+  blockNumber: number,
+  chainId: CHAINS,
+): Promise<UserFormattedPosition[]> => {
   const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_CLASSIC_POOLS];
   const queryTemplate = `{
     liquidityPositions(
@@ -183,6 +185,7 @@ export const getUserClassicPositions = async (blockNumber: number, chainId: CHAI
         id
       }
       pair {
+        id
         totalSupply
         reserveUSD
         reserve0
@@ -223,6 +226,7 @@ export const getUserClassicPositions = async (blockNumber: number, chainId: CHAI
         address: position.pair.token1.id,
         balance: userToken1Balance.toString(),
       },
+      pair: position.pair.id,
     };
   });
 };
@@ -257,7 +261,7 @@ const getConcentratedPositionReserves = (position: ConcentratedPosition) => {
 export const getUserConcentratedPositions = async (
   blockNumber: number,
   chainId: CHAINS,
-): Promise<UserConcentratedPosition[]> => {
+): Promise<UserFormattedPosition[]> => {
   const subgraphUrl = SUBGRAPH_URLS[chainId][PROTOCOLS.OCELEX_CONCENTRATED_POOLS];
   const queryTemplate = `{
     positions(
@@ -269,6 +273,7 @@ export const getUserConcentratedPositions = async (
       liquidity
       owner
       pool {
+        id
         sqrtPrice
         tick
         token0 {
@@ -305,6 +310,7 @@ export const getUserConcentratedPositions = async (
         address: position.pool.token1.id,
         balance: reserve1.toString(),
       },
+      pair: position.pool.id,
     };
   });
 };
