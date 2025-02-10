@@ -7,6 +7,8 @@ import { getExchangeRatesBeforeBlock, getBalanceChangesBeforeBlock, getLPValueBy
 import fs from 'fs';
 import { write } from 'fast-csv';
 import path from "path";
+import { createPublicClient, http } from "viem";
+import { zircuit } from "viem/chains";
 
 interface CSVRow {
   user: string;
@@ -31,15 +33,25 @@ const prepareBlockNumbersArr = (
   return blockNumbers;
 };
 
-const INITIAL_BLOCK = 8090914;
-const END_BLOCK = 10000000; // END_BLOCK set in the future to get all the data
+const getEndBlock = async () => {
+  const client = createPublicClient({
+    chain: zircuit,
+    transport: http()
+  })
+  const endBlock = Number(await client.getBlockNumber())
+  return endBlock
+}
+
+const INITIAL_BLOCK = 6026314; // Creation block of oldest Elara pool
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 
 const OUTPUT_FILE = "../out/tvl_snapshot_elara.csv";
 
 const getData = async () => {
   const csvRows: CSVRow[] = [];
-  console.log("Fetching data from subgraph...")
+
+  const END_BLOCK = await getEndBlock()
+  console.log(`Fetching data from subgraph... end block: ${END_BLOCK}`)
   
   const [exchangeRates, balanceChanges] = await Promise.all([
     getExchangeRatesBeforeBlock(END_BLOCK, CHAINS.ZIRCUIT, PROTOCOLS.ELARA),
