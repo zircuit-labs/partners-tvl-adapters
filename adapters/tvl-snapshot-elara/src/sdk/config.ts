@@ -7,6 +7,6 @@ export const enum PROTOCOLS {
 
 export const SUBGRAPH_URLS = {
     [CHAINS.ZIRCUIT]: {
-        [PROTOCOLS.ELARA]: "https://api.goldsky.com/api/public/project_cm5wn4t5o44tn01ygeqt14mzj/subgraphs/elara-example/1.0.0/gn"
+        [PROTOCOLS.ELARA]: "https://api.goldsky.com/api/public/project_cm6fyrqv3njua01th4nak8bze/subgraphs/elara/v1/gn"
     }
 }
