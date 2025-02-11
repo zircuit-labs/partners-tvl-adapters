@@ -15,6 +15,7 @@ import {
   writeCSVOutput,
   prepareBlockNumbersArr,
   getAllPairData,
+  Semaphore,
 } from './sdk/utils';
 import {
   getUserClassicPositions,
@@ -25,6 +26,8 @@ import {
 } from './sdk/subgraphDetails';
 
 // Constants
+const BATCH_SIZE = 40; // Process 40 blocks every 10 seconds
+const RATE_LIMIT_WINDOW = 10000; // 10 seconds in ms
 const INITIAL_BLOCK = 4904075; // Block where we start to pick up data
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
@@ -143,6 +146,35 @@ const processPositions = (positionData: PositionData, pairData: Record<string, L
   return balances;
 };
 
+const processBlockBatch = async (blocks: number[], client: PublicClient): Promise<CSVRow[]> => {
+  const semaphore = new Semaphore(BATCH_SIZE);
+
+  const promises = blocks.map(async block => {
+    await semaphore.acquire();
+    try {
+      const positionData = await processPositionData(block);
+      if (!positionData) return [];
+
+      const pairData = await getAllPairData(positionData.pairs, client, block);
+      const balances = processPositions(positionData, pairData);
+      
+      return balances.map((balance) => ({
+        ...balance,
+        block: positionData.block,
+        timestamp: positionData.timestamp,
+      }));
+    } catch (error) {
+      console.error(`Error processing block ${block}:`, error);
+      return [];
+    } finally {
+      semaphore.release();
+    }
+  });
+
+  const batchResults = await Promise.all(promises);
+  return batchResults.flat();
+};
+
 const getData = async () => {
   const allBalances: CSVRow[] = [];
   console.log('Starting TVL snapshot generation...');
@@ -152,24 +184,20 @@ const getData = async () => {
     const END_BLOCK = Number(await client.getBlockNumber());
     const snapshotBlocks = prepareBlockNumbersArr(INITIAL_BLOCK, INTERVAL, END_BLOCK);
 
-    console.log(`Will process ${snapshotBlocks.length} blocks`);
+    console.log(`Will process ${snapshotBlocks.length} blocks in batches of ${BATCH_SIZE}`);
 
-    for (let [index, block] of snapshotBlocks.entries()) {
-      console.log(`Processing block ${block}: ${index + 1} of ${snapshotBlocks.length}`);
+    // Process blocks in batches
+    for (let i = 0; i < snapshotBlocks.length; i += BATCH_SIZE) {
+      const batchBlocks = snapshotBlocks.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(snapshotBlocks.length/BATCH_SIZE)}`);
+      
+      const batchBalances = await processBlockBatch(batchBlocks, client as PublicClient);
+      allBalances.push(...batchBalances);
 
-      const positionData = await processPositionData(block);
-      if (!positionData) continue;
-
-      const pairData = await getAllPairData(positionData.pairs, client as PublicClient, block);
-
-      const balances = processPositions(positionData, pairData);
-      const blockRows: CSVRow[] = balances.map((balance) => ({
-        ...balance,
-        block: positionData.block,
-        timestamp: positionData.timestamp,
-      }));
-
-      allBalances.push(...blockRows);
+      // Wait for rate limit window if not the last batch
+      if (i + BATCH_SIZE < snapshotBlocks.length) {
+        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WINDOW));
+      }
     }
 
     const aggregatedRows = aggregateBalances(allBalances);

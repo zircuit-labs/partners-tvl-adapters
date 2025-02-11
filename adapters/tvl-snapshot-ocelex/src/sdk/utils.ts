@@ -81,3 +81,30 @@ export const writeCSVOutput = async (rows: CSVRow[], outputFile: string): Promis
       .on('error', reject);
   });
 };
+
+export class Semaphore {
+  private running = 0;
+  private queue: (() => void)[] = [];
+
+  constructor(private maxConcurrent: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.running < this.maxConcurrent) {
+      this.running++;
+      return;
+    }
+
+    return new Promise<void>(resolve => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    this.running--;
+    const next = this.queue.shift();
+    if (next) {
+      this.running++;
+      next();
+    }
+  }
+}
