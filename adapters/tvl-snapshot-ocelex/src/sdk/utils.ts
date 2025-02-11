@@ -64,10 +64,10 @@ export const aggregateBalances = (rows: CSVRow[]): CSVRow[] => {
 };
 
 export const writeCSVOutput = async (rows: CSVRow[], outputFile: string): Promise<void> => {
-  const outputDir = path.resolve(__dirname, '../out');
+  const outputDir = path.resolve(__dirname, '../../out');
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const outputPath = path.resolve(__dirname, outputFile);
+  const outputPath = path.join(outputDir, path.basename(outputFile));
   const ws = fs.createWriteStream(outputPath);
 
   return new Promise((resolve, reject) => {
