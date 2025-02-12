@@ -6,5 +6,6 @@ This repo geneates a `.csv` file for Ocelex.fi's DEX TVL by user, taking a snaps
 
 ```
 npm install // install all packages
-npm run start // compile & run
+npm run compile // compile the project
+npm run start // run the project
 ```
