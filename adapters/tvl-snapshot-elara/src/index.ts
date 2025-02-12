@@ -45,7 +45,7 @@ const getEndBlock = async () => {
 const INITIAL_BLOCK = 6026314; // Creation block of oldest Elara pool
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 
-const OUTPUT_FILE = "../out/tvl_snapshot_elara.csv";
+const OUTPUT_FILE = "../out/tvl-snapshot-elara.csv";
 
 const getData = async () => {
   const csvRows: CSVRow[] = [];
