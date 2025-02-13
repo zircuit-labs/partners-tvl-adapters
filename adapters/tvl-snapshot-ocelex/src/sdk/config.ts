@@ -79,11 +79,8 @@ export interface PreMiningPositionByUser {
   liquidityPositions: PreMiningPosition[];
 }
 
-export interface CSVRow {
-  user: string;
-  token_address: string;
+export interface CSVRow extends TokenBalance {
   block: number;
-  token_balance: string;
   timestamp: number;
 }
 
@@ -127,6 +124,7 @@ export interface ConcentratedPosition {
 
 export interface TokenBalance {
   user: string;
+  pool: string;
   token_address: string;
   token_balance: string;
 }
