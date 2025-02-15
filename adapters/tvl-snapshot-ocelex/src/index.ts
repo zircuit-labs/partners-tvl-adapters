@@ -11,7 +11,6 @@ import {
 } from './sdk/config';
 import {
   processTokenBalance,
-  aggregateBalances,
   writeCSVOutput,
   prepareBlockNumbersArr,
   getAllPairData,
@@ -95,8 +94,8 @@ const processPositions = (positionData: PositionData, pairData: Record<string, L
       const token0Amount = (pairInfo.reserve0 * userShare) / BigInt(1e18);
       const token1Amount = (pairInfo.reserve1 * userShare) / BigInt(1e18);
 
-      const token0Balance = processTokenBalance(token0Amount.toString(), user.id, pos.gauge.token0.id);
-      const token1Balance = processTokenBalance(token1Amount.toString(), user.id, pos.gauge.token1.id);
+      const token0Balance = processTokenBalance(token0Amount.toString(), user.id, pos.gauge.token0.id, pos.gauge.pool);
+      const token1Balance = processTokenBalance(token1Amount.toString(), user.id, pos.gauge.token1.id, pos.gauge.pool);
 
       if (token0Balance) balances.push(token0Balance);
       if (token1Balance) balances.push(token1Balance);
@@ -116,8 +115,8 @@ const processPositions = (positionData: PositionData, pairData: Record<string, L
       const token0Amount = (pairInfo.reserve0 * userShare) / BigInt(1e18);
       const token1Amount = (pairInfo.reserve1 * userShare) / BigInt(1e18);
 
-      const token0Balance = processTokenBalance(token0Amount.toString(), user.id, pos.premining.token0.id);
-      const token1Balance = processTokenBalance(token1Amount.toString(), user.id, pos.premining.token1.id);
+      const token0Balance = processTokenBalance(token0Amount.toString(), user.id, pos.premining.token0.id, pos.premining.pool);
+      const token1Balance = processTokenBalance(token1Amount.toString(), user.id, pos.premining.token1.id, pos.premining.pool);
 
       if (token0Balance) balances.push(token0Balance);
       if (token1Balance) balances.push(token1Balance);
@@ -127,8 +126,8 @@ const processPositions = (positionData: PositionData, pairData: Record<string, L
   // Process classic positions
   for (const pos of positionData.classicPositions) {
     const userId = pos.id.split('-')[0];
-    const token0Balance = processTokenBalance(pos.token0.balance, userId, pos.token0.address);
-    const token1Balance = processTokenBalance(pos.token1.balance, userId, pos.token1.address);
+    const token0Balance = processTokenBalance(pos.token0.balance, userId, pos.token0.address, pos.pair);
+    const token1Balance = processTokenBalance(pos.token1.balance, userId, pos.token1.address, pos.pair);
 
     if (token0Balance) balances.push(token0Balance);
     if (token1Balance) balances.push(token1Balance);
@@ -136,8 +135,8 @@ const processPositions = (positionData: PositionData, pairData: Record<string, L
 
   // Process concentrated positions
   for (const pos of positionData.concentratedPositions) {
-    const token0Balance = processTokenBalance(pos.token0.balance, pos.id, pos.token0.address);
-    const token1Balance = processTokenBalance(pos.token1.balance, pos.id, pos.token1.address);
+    const token0Balance = processTokenBalance(pos.token0.balance, pos.id, pos.token0.address, pos.pair);
+    const token1Balance = processTokenBalance(pos.token1.balance, pos.id, pos.token1.address, pos.pair);
 
     if (token0Balance) balances.push(token0Balance);
     if (token1Balance) balances.push(token1Balance);
@@ -200,8 +199,7 @@ const getData = async () => {
       }
     }
 
-    const aggregatedRows = aggregateBalances(allBalances);
-    await writeCSVOutput(aggregatedRows, OUTPUT_FILE);
+    await writeCSVOutput(allBalances, OUTPUT_FILE);
   } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);
