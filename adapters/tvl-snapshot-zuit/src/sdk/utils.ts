@@ -19,27 +19,14 @@ export const prepareBlockNumbersArr = (
   return blockNumbers;
 };
 
-export const processTokenBalance = (balance: string, user: string, tokenAddress: string): TokenBalance | null => {
-  if (balance === '0') return null;
+export const processTokenBalance = (balance: string, user: string, tokenAddress: string, pool: string): TokenBalance | null => {
+  if (!balance || BigInt(balance) === 0n) return null;
   return {
     user,
+    pool,
     token_address: tokenAddress,
     token_balance: balance,
   };
-};
-
-export const aggregateBalances = (rows: CSVRow[]): CSVRow[] => {
-  const aggregatedMap = new Map<string, CSVRow>();
-  rows.forEach((row) => {
-    const key = `${row.user}-${row.token_address}-${row.block}`;
-    if (aggregatedMap.has(key)) {
-      const existing = aggregatedMap.get(key)!;
-      existing.token_balance = (BigInt(existing.token_balance) + BigInt(row.token_balance)).toString();
-    } else {
-      aggregatedMap.set(key, { ...row });
-    }
-  });
-  return Array.from(aggregatedMap.values());
 };
 
 export const writeCSVOutput = async (rows: CSVRow[], outputFile: string): Promise<unknown> => {
