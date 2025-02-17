@@ -6,7 +6,6 @@ import {
 } from './sdk/config';
 import {
   processTokenBalance,
-  aggregateBalances,
   writeCSVOutput,
   prepareBlockNumbersArr,
   Semaphore,
@@ -59,8 +58,8 @@ const processPositions = (positionData: PositionData): TokenBalance[] => {
   // Process classic positions
   for (const pos of positionData.classicPositions) {
     const userId = pos.id.split('-')[0];
-    const token0Balance = processTokenBalance(pos.token0.balance, userId, pos.token0.address);
-    const token1Balance = processTokenBalance(pos.token1.balance, userId, pos.token1.address);
+    const token0Balance = processTokenBalance(pos.token0.balance, userId, pos.token0.address, pos.pair);
+    const token1Balance = processTokenBalance(pos.token1.balance, userId, pos.token1.address, pos.pair);
 
     if (token0Balance) balances.push(token0Balance);
     if (token1Balance) balances.push(token1Balance);
@@ -121,8 +120,7 @@ const getData = async () => {
       }
     }
 
-    const aggregatedRows = aggregateBalances(allBalances);
-    await writeCSVOutput(aggregatedRows, OUTPUT_FILE);
+    await writeCSVOutput(allBalances, OUTPUT_FILE);
   } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);

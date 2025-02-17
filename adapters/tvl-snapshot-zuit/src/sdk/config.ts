@@ -15,11 +15,8 @@ export const SUBGRAPH_URLS = {
 }
 
 
-export interface CSVRow {
-    user: string;
-    token_address: string;
+export interface CSVRow extends TokenBalance {
     block: number;
-    token_balance: string;
     timestamp: number;
 }
 
@@ -39,6 +36,7 @@ export type UserFormattedPosition = {
 
 export interface TokenBalance {
     user: string;
+    pool: string;
     token_address: string;
     token_balance: string;
 }
