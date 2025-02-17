@@ -3,6 +3,7 @@ import { zircuit } from 'viem/chains';
 import {
   CHAINS, CSVRow,
   PositionData, TokenBalance,
+  UserFormattedPosition,
 } from './sdk/config';
 import {
   processTokenBalance,
@@ -26,7 +27,14 @@ const processPositionData = async (block: number): Promise<PositionData | null> 
   try {
     const timestamp = await getBlockTimestamp(block);
 
-    const classicPositions = await getUserClassicPositions(block, CHAINS.ZIRCUIT);
+    let classicPositions: UserFormattedPosition[] = [];
+
+    try {
+      classicPositions = await getUserClassicPositions(block, CHAINS.ZIRCUIT);
+    } catch (error) {
+      console.log(`No classic positions data available for block ${block}, skipping...`);
+      return null;
+    }
 
     if (
         classicPositions.length === 0
