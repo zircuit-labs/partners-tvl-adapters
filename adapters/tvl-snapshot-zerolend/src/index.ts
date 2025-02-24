@@ -5,10 +5,6 @@ import { CHAINS, PROTOCOLS } from "./sdk/config";
 import { getUserReservesForBlock, UserReserveData } from "./sdk/subgraphDetails";
 import { getBlockByTimestamp } from './utils/helper';
 
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
-
 interface CSVRow {
   user: string;
   token_address: string;
