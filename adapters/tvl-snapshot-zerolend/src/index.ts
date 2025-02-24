@@ -23,7 +23,7 @@ const mapUserReservesToCSVRows = async (
 
     const timestamp = parseInt(reserve.lastUpdateTimestamp);
     const blockNumber = await getBlockByTimestamp(timestamp);
-    
+
     csvRows.push({
       user: reserve.user.id,
       token_address: reserve.reserve.underlyingAsset,
@@ -52,7 +52,6 @@ const getData = async () => {
     if (userReserves.length > 0) {
       const blockRows = await mapUserReservesToCSVRows(userReserves, INITIAL_BLOCK);
       csvRows.push(...blockRows);
-      // console.log(`Added ${blockRows.length} records for block ${INITIAL_BLOCK}`);
     } else {
       console.log(`No data found for block ${INITIAL_BLOCK}`);
     }
