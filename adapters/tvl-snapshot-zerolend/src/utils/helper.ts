@@ -1,0 +1,40 @@
+
+import { ZIRCUIT_RPC } from "../sdk/config";
+
+const { ethers } = require("ethers");
+
+
+const provider = new ethers.JsonRpcProvider(ZIRCUIT_RPC);;
+
+export const  getBlockByTimestamp = async (targetTimestamp :any ) => {
+   const t1 = Date.now()
+    // console.log("|-----------------------------------------------------------|");
+
+    let latestBlock = await provider.getBlock("latest");
+    let earliestBlock = await provider.getBlock(1); 
+
+    let latestBlockNumber = latestBlock.number;
+    let earliestBlockNumber = earliestBlock.number;
+    
+    while (earliestBlockNumber < latestBlockNumber) {
+        let midBlockNumber = Math.floor((earliestBlockNumber + latestBlockNumber) / 2);
+        let midBlock = await provider.getBlock(midBlockNumber);
+        if (!midBlock) {
+            console.error("Block not found!");
+            return null;
+        }
+
+        earliestBlockNumber = midBlockNumber + 1;
+        if (midBlock.timestamp < targetTimestamp) {
+        } else {
+            latestBlockNumber = midBlockNumber;
+        }
+    }
+    // console.log("block", earliestBlockNumber );
+    console.log(`| block for ${targetTimestamp } is -> ${earliestBlockNumber} | time taken ->", ${Date.now() - t1} |`);
+    
+    return earliestBlockNumber; 
+}
+
+
+
