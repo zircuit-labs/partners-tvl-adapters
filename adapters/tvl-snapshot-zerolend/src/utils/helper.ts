@@ -27,8 +27,6 @@ export const getBlockByTimestamp = async (targetTimestamp: any) => {
             latestBlockNumber = midBlockNumber;
         }
     }
-    // console.log("block", earliestBlockNumber );
-    console.log(`block for ${targetTimestamp} is -> ${earliestBlockNumber}time taken ", ${Date.now() - t1} `);
 
     return earliestBlockNumber;
 }
