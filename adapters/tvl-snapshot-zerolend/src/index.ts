@@ -37,8 +37,8 @@ const mapUserReservesToCSVRows = async (
 };
 
 const INITIAL_BLOCK = 2662044;
-const OUTPUT_FILE = "../out/tvl-snapshot-zerolend.csv";
-
+const OUTPUT_DIR = path.resolve(process.cwd(), "out");
+const OUTPUT_PATH = path.join(OUTPUT_DIR, "tvl-snapshot-zerolend.csv");
 const getData = async () => {
   const csvRows: CSVRow[] = [];
 
@@ -59,17 +59,18 @@ const getData = async () => {
     console.error(`Error processing block ${INITIAL_BLOCK}:`, error);
   }
 
-  const outputDir = path.resolve(__dirname, "../out");
-  fs.mkdirSync(outputDir, { recursive: true });
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
+  const ws = fs.createWriteStream(OUTPUT_PATH
 
-  const outputPath = path.resolve(__dirname, OUTPUT_FILE);
-  const ws = fs.createWriteStream(outputPath);
+  );
 
   write(csvRows, { headers: true })
     .pipe(ws)
     .on('finish', () => {
-      console.log("CSV file has been written to:", outputPath);
+      console.log("CSV file has been written to:", OUTPUT_PATH
+
+      );
       console.log(`Total records: ${csvRows.length}`);
     });
 };
