@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { write } from 'fast-csv';
 import * as path from "path";
 import { CHAINS, PROTOCOLS } from "./sdk/config";
-import { getUserReservesForBlock, UserReserveData } from "./sdk/subgraphDetails";
+import { getUserReservesWithHistory, UserReserveData } from "./sdk/subgraphDetails";
 import { getBlockByTimestamp } from './utils/helper';
 
 interface CSVRow {
@@ -14,56 +14,51 @@ interface CSVRow {
 }
 
 const mapUserReservesToCSVRows = async (
-  userReserves: UserReserveData[],
-  blockNumber: number
+  userReserves: UserReserveData[]
 ): Promise<CSVRow[]> => {
   const csvRows: CSVRow[] = [];
 
   for (const reserve of userReserves) {
-
-    const timestamp = parseInt(reserve.lastUpdateTimestamp);
-    const blockNumber = await getBlockByTimestamp(timestamp);
-
-    csvRows.push({
-      user: reserve.user.id,
-      token_address: reserve.reserve.underlyingAsset,
-      block: blockNumber,
-      token_balance: reserve.currentATokenBalance,
-      timestamp
-    });
+    for (const history of reserve.aTokenBalanceHistory) {
+      const timestamp = parseInt(history.timestamp);
+      const blockNumber = await getBlockByTimestamp(timestamp);
+      
+      csvRows.push({
+        user: reserve.user.id,
+        token_address: reserve.reserve.underlyingAsset,
+        block: blockNumber,
+        token_balance: history.currentATokenBalance,
+        timestamp
+      });
+    }
   }
 
   return csvRows;
 };
 
-const INITIAL_BLOCK = 2662044;
 const OUTPUT_DIR = path.resolve(process.cwd(), "out");
 const OUTPUT_PATH = path.join(OUTPUT_DIR, "tvl-snapshot-zerolend.csv");
 const getData = async () => {
   const csvRows: CSVRow[] = [];
 
   try {
-    const userReserves = await getUserReservesForBlock(
+    const userReserves = await getUserReservesWithHistory(
       CHAINS.ZIRCUIT,
-      PROTOCOLS.ZEROLEND,
-      INITIAL_BLOCK
+      PROTOCOLS.ZEROLEND
     );
 
     if (userReserves.length > 0) {
-      const blockRows = await mapUserReservesToCSVRows(userReserves, INITIAL_BLOCK);
-      csvRows.push(...blockRows);
-    } else {
-      console.log(`No data found for block ${INITIAL_BLOCK}`);
+      const rows = await mapUserReservesToCSVRows(userReserves);
+      csvRows.push(...rows);
+      console.log(`Generated ${rows.length} CSV records`);
     }
   } catch (error) {
-    console.error(`Error processing block ${INITIAL_BLOCK}:`, error);
+    console.error(`Error processing in fetching data:`, error);
   }
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  const ws = fs.createWriteStream(OUTPUT_PATH
-
-  );
+  const ws = fs.createWriteStream(OUTPUT_PATH);
 
   write(csvRows, { headers: true })
     .pipe(ws)

@@ -1,55 +1,56 @@
 import { CHAINS, PROTOCOLS, SUBGRAPH_URLS } from "./config";
 
+export interface ATokenBalanceHistory {
+  currentATokenBalance: string;
+  timestamp: string;
+}
 export interface UserReserveData {
   user: {
     id: string;
   };
-  currentATokenBalance: string;
   reserve: {
     underlyingAsset: string;
     symbol: string;
   };
-  lastUpdateTimestamp: string;
+  aTokenBalanceHistory: ATokenBalanceHistory[];
 }
 
 export interface QueryResponse {
   userReserves: UserReserveData[];
 }
 
-export const getUserReservesForBlock = async (
+export const getUserReservesWithHistory = async (
   chainId: CHAINS,
-  protocol: PROTOCOLS,
-  blockNumber: number
+  protocol: PROTOCOLS
 ): Promise<UserReserveData[]> => {
   const subgraphUrl = SUBGRAPH_URLS[chainId][protocol];
-  return paginatedQuery<UserReserveData>(
+  return paginatedQuery(
     subgraphUrl,
     buildUserReservesQuery(),
-    blockNumber,
-    "userReserves"
-  );
+    "userReserves");
 };
 
 const buildUserReservesQuery = () => {
-  return `query Reserve($skip: Int!, $limit: Int!, $blockNumber: Int!) {
-        userReserves(skip: $skip, first: $limit, block: {number_gte: $blockNumber}) {
-            user {
-                id
-            }
-            currentATokenBalance
-            reserve {
-                underlyingAsset
-                symbol
-            }
-            lastUpdateTimestamp
-        }
-    }`;
+  return `query UserReserves($skip: Int!, $limit: Int!) {
+    userReserves(skip: $skip, first: $limit) {
+      user {
+        id
+      }
+      reserve {
+        underlyingAsset
+        symbol
+      }
+      aTokenBalanceHistory {
+        currentATokenBalance
+        timestamp
+      }
+    }
+  }`;
 };
 
 const paginatedQuery = async <T>(
   subgraphUrl: string,
   queryTemplate: string,
-  blockNumber: number,
   resultKey: string
 ): Promise<T[]> => {
   let skip = 0;
@@ -61,7 +62,6 @@ const paginatedQuery = async <T>(
     const variables = {
       skip: skip,
       limit: PAGE_SIZE,
-      blockNumber: blockNumber,
     };
 
     const response = await fetch(subgraphUrl, {
