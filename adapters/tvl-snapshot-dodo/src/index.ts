@@ -20,7 +20,7 @@ import {
 // Constants
 const BATCH_SIZE = 40; // Process 40 blocks every 10 seconds
 const RATE_LIMIT_WINDOW = 10000; // 10 seconds in ms
-const INITIAL_BLOCK = 1369131; // Block where we start to pick up data
+const INITIAL_BLOCK = 6214022; // Block where we start to pick up data
 const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
 const OUTPUT_FILE = '../out/tvl-snapshot-zuit.csv';
 
