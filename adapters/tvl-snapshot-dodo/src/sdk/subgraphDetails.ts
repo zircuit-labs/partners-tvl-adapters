@@ -5,6 +5,7 @@ import {
   SUBGRAPH_URLS, UserFormattedPosition,
 } from './config';
 import { parseUnits } from 'viem';
+import { BigNumber } from 'bignumber.js';
 
 const paginatedQuery = async <T>(
   subgraphUrl: string,
@@ -27,9 +28,10 @@ const paginatedQuery = async <T>(
       method: 'POST',
       body: JSON.stringify({ query }),
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const items = data.data[resultKey];
 
     result.push(...items);
@@ -63,7 +65,7 @@ export const getBlockTimestamp = async (blockNumber: number): Promise<number> =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-  const data = await response.json();
+  const data = await response.json() as any;
   return Number(data.data.blocks[0].timestamp);
 };
 
@@ -139,14 +141,15 @@ export const getUserClassicPositions = async (
   const positions = await paginatedQuery<any>(subgraphUrl, queryTemplate, blockNumber, 'liquidityPositions');
 
   return positions.map((position) => {
+    const liquidityTokenBalance = _BigInt(position.liquidityTokenBalance, 18)
     const userShare =
-      (BigInt(parseUnits(position.liquidityTokenBalance, 18).toString()) * BigInt(1e18)) /
-      BigInt(parseUnits(position.lpToken.totalSupply, Number(position.lpToken.decimals)).toString());
+      (liquidityTokenBalance * BigInt(1e18)) /
+      _BigInt(position.lpToken.totalSupply, position.lpToken.decimals);
     const userToken0Balance =
-      (BigInt(parseUnits(position.pair.baseReserve, Number(position.pair.baseToken.decimals)).toString()) * userShare) /
+      (_BigInt(position.pair.baseReserve, position.pair.baseToken.decimals) * userShare) /
       BigInt(1e18);
     const userToken1Balance =
-      (BigInt(parseUnits(position.pair.quoteReserve, Number(position.pair.quoteToken.decimals)).toString()) * userShare) /
+      (_BigInt(position.pair.quoteReserve, position.pair.quoteToken.decimals) * userShare) /
       BigInt(1e18);
 
     return {
@@ -164,3 +167,18 @@ export const getUserClassicPositions = async (
     };
   });
 };
+
+
+const fmt = {
+  prefix: '',
+  groupSize: 0,
+  secondaryGroupSize: 0,
+  groupSeparator: '',
+  decimalSeparator: '.',
+  fractionGroupSize: 0,
+  fractionGroupSeparator: '\xA0',        // non-breaking space
+  suffix: ''
+}
+function _BigInt(val: any, decimals: any): bigint {
+  return BigInt(parseUnits(BigNumber(val).toFormat(fmt), Number(decimals)).toString())
+}
