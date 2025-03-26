@@ -110,8 +110,7 @@ const getData = async () => {
 
   try {
     const client = createPublicClient({ chain: zircuit, transport: http() });
-    // const END_BLOCK = Number(await client.getBlockNumber());
-    const END_BLOCK = INITIAL_BLOCK + 100
+    const END_BLOCK = Number(await client.getBlockNumber());
     const snapshotBlocks = prepareBlockNumbersArr(INITIAL_BLOCK, INTERVAL, END_BLOCK);
 
     console.log(`Will process ${snapshotBlocks.length} blocks in batches of ${BATCH_SIZE}`);
