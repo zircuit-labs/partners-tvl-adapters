@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { write } from 'fast-csv';
 import { CSVRow, TokenBalance } from './config';
+import { BigNumber } from 'bignumber.js';
 
 
 
@@ -20,12 +21,12 @@ export const prepareBlockNumbersArr = (
 };
 
 export const processTokenBalance = (balance: string, user: string, tokenAddress: string, pool: string): TokenBalance | null => {
-  if (!balance || BigInt(balance) === 0n) return null;
+  if (!balance || BigNumber.isBigNumber(balance)) return null;
   return {
     user,
     pool,
     token_address: tokenAddress,
-    token_balance: balance,
+    token_balance: BigNumber(balance).toString(),
   };
 };
 

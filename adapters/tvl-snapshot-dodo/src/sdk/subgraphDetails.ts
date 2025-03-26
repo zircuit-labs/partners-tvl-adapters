@@ -133,7 +133,7 @@ export const getUserClassicPositions = async (
       }
       _meta {
           block {
-          number
+            number
           }
       }
       }
@@ -141,16 +141,9 @@ export const getUserClassicPositions = async (
   const positions = await paginatedQuery<any>(subgraphUrl, queryTemplate, blockNumber, 'liquidityPositions');
 
   return positions.map((position) => {
-    const liquidityTokenBalance = _BigInt(position.liquidityTokenBalance, 18)
-    const userShare =
-      (liquidityTokenBalance * BigInt(1e18)) /
-      _BigInt(position.lpToken.totalSupply, position.lpToken.decimals);
-    const userToken0Balance =
-      (_BigInt(position.pair.baseReserve, position.pair.baseToken.decimals) * userShare) /
-      BigInt(1e18);
-    const userToken1Balance =
-      (_BigInt(position.pair.quoteReserve, position.pair.quoteToken.decimals) * userShare) /
-      BigInt(1e18);
+    const userShare = BigNumber(position.liquidityTokenBalance).div(BigNumber(position.lpToken.totalSupply).div(10 ** position.lpToken.decimals));
+    const userToken0Balance = BigNumber(position.pair.baseReserve).times(userShare);
+    const userToken1Balance = BigNumber(position.pair.quoteReserve).times(userShare);
 
     return {
       id: position.user.id,
