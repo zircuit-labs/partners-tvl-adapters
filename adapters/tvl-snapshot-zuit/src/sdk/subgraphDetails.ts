@@ -4,6 +4,7 @@ import {
     SUBGRAPH_URLS, UserFormattedPosition,
 } from './config';
 import { parseUnits } from 'viem';
+import { withRetry } from './utils';
 
 const paginatedQuery = async <T>(
     subgraphUrl: string,
@@ -22,10 +23,19 @@ const paginatedQuery = async <T>(
             .replace('{{blockNumber}}', blockNumber.toString())
             .replace('{{limit}}', PAGE_SIZE.toString());
 
-        const response = await fetch(subgraphUrl, {
-            method: 'POST',
-            body: JSON.stringify({ query }),
-            headers: { 'Content-Type': 'application/json' },
+        const response = await withRetry(async () => {
+            const res = await fetch(subgraphUrl, {
+                method: 'POST',
+                body: JSON.stringify({ query }),
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
+            });
+
+            if (!res.ok) {
+                throw new Error(`Subgraph request failed with status ${res.status}`);
+            }
+
+            return res;
         });
 
         const data = await response.json();
@@ -56,14 +66,20 @@ export const getBlockTimestamp = async (blockNumber: number): Promise<number> =>
     }
   }`;
 
-    const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-        headers: { 'Content-Type': 'application/json' },
-    });
+    return await withRetry(async () => {
+        const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
+            method: 'POST',
+            body: JSON.stringify({ query }),
+            headers: { 'Content-Type': 'application/json' },
+        });
 
-    const data = await response.json();
-    return Number(data.data.blocks[0].timestamp);
+        if (!response.ok) {
+            throw new Error(`Subgraph request failed with status ${response.status}`);
+        }
+
+      const data = await response.json();
+      return Number(data.data.blocks[0].timestamp);
+    });
 };
 
 
