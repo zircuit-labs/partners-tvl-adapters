@@ -6,6 +6,7 @@ import {
 } from './config';
 import { parseUnits } from 'viem';
 import { BigNumber } from 'bignumber.js';
+import { withRetry } from './utils';
 
 const paginatedQuery = async <T>(
   subgraphUrl: string,
@@ -24,11 +25,19 @@ const paginatedQuery = async <T>(
       .replace('{{blockNumber}}', blockNumber.toString())
       .replace('{{limit}}', PAGE_SIZE.toString());
 
-    const response = await fetch(subgraphUrl, {
-      method: 'POST',
-      body: JSON.stringify({ query }),
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
+    const response = await withRetry(async () => {
+      const res = await fetch(subgraphUrl, {
+        method: 'POST',
+        body: JSON.stringify({ query }),
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Subgraph request failed with status ${res.status}`);
+      }
+
+      return res;
     });
 
     const data = await response.json() as any;
@@ -59,14 +68,20 @@ export const getBlockTimestamp = async (blockNumber: number): Promise<number> =>
     }
   }`;
 
-  const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
-    method: 'POST',
-    body: JSON.stringify({ query }),
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return await withRetry(async () => {
+    const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  const data = await response.json() as any;
-  return Number(data.data.blocks[0].timestamp);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch block timestamp from subgraph: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return Number(data.data.blocks[0].timestamp);
+  });
 };
 
 export const getUserClassicPositions = async (
@@ -141,9 +156,17 @@ export const getUserClassicPositions = async (
   const positions = await paginatedQuery<any>(subgraphUrl, queryTemplate, blockNumber, 'liquidityPositions');
 
   return positions.map((position) => {
-    const userShare = BigNumber(position.liquidityTokenBalance).div(BigNumber(position.lpToken.totalSupply).div(10 ** position.lpToken.decimals));
-    const userToken0Balance = BigNumber(position.pair.baseReserve).times(userShare);
-    const userToken1Balance = BigNumber(position.pair.quoteReserve).times(userShare);
+    // Convert to BigInt with consistent scaling factor
+    const liquidityTokenBalanceWei = _BigInt(position.liquidityTokenBalance, position.lpToken.decimals);
+    const totalSupplyWei = BigInt(position.lpToken.totalSupply);
+
+    // Calculate scaled balance directly with token reserves to maintain precision
+    const baseReserveWei = _BigInt(position.pair.baseReserve, position.pair.baseToken.decimals);
+    const quoteReserveWei = _BigInt(position.pair.quoteReserve, position.pair.quoteToken.decimals);
+
+    // Calculate user's token amounts using the ratio directly
+    const userToken0Balance = baseReserveWei * liquidityTokenBalanceWei / totalSupplyWei;
+    const userToken1Balance = quoteReserveWei * liquidityTokenBalanceWei / totalSupplyWei;
 
     return {
       id: position.user.id,

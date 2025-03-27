@@ -2,9 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { write } from 'fast-csv';
 import { CSVRow, TokenBalance } from './config';
-import { BigNumber } from 'bignumber.js';
-
-
 
 export const prepareBlockNumbersArr = (
   startBlockNumber: number,
@@ -21,12 +18,12 @@ export const prepareBlockNumbersArr = (
 };
 
 export const processTokenBalance = (balance: string, user: string, tokenAddress: string, pool: string): TokenBalance | null => {
-  if (!balance || BigNumber.isBigNumber(balance)) return null;
+  if (!balance || BigInt(balance) === BigInt(0)) return null;
   return {
     user,
     pool,
     token_address: tokenAddress,
-    token_balance: BigNumber(balance).toString(),
+    token_balance: balance,
   };
 };
 
@@ -75,3 +72,33 @@ export class Semaphore {
     }
   }
 }
+
+/**
+ * Retry a function with exponential backoff
+ * @param fn The function to retry
+ * @param maxRetries Maximum number of retries
+ * @param initialDelay Initial delay in ms
+ * @returns The result of the function
+ */
+export const withRetry = async <T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  initialDelay = 1000
+): Promise<T> => {
+  let retries = 0;
+
+  while (true) {
+    try {
+      return await fn();
+    } catch (error) {
+      retries++;
+      if (retries > maxRetries) {
+        throw error;
+      }
+
+      const delay = initialDelay * Math.pow(2, retries - 1);
+      console.log(`Attempt ${retries} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
