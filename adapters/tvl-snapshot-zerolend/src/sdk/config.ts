@@ -10,4 +10,3 @@ export const SUBGRAPH_URLS = {
       "https://api.goldsky.com/api/public/project_clsk1wzatdsls01wchl2e4n0y/subgraphs/zerolend-zircuit/1.0.0/gn",
   },
 };
-export const ZIRCUIT_RPC = "https://zircuit1-mainnet.p2pify.com"
