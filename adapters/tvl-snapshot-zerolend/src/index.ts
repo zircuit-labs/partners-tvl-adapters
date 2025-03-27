@@ -3,7 +3,6 @@ import { write } from 'fast-csv';
 import * as path from "path";
 import { CHAINS, PROTOCOLS } from "./sdk/config";
 import { getUserReservesWithHistory, UserReserveData } from "./sdk/subgraphDetails";
-import { getBlockByTimestamp } from './utils/helper';
 
 interface CSVRow {
   user: string;
@@ -21,12 +20,11 @@ const mapUserReservesToCSVRows = async (
   for (const reserve of userReserves) {
     for (const history of reserve.aTokenBalanceHistory) {
       const timestamp = parseInt(history.timestamp);
-      const blockNumber = await getBlockByTimestamp(timestamp);
       
       csvRows.push({
         user: reserve.user.id,
         token_address: reserve.reserve.underlyingAsset,
-        block: blockNumber,
+        block: 0,
         token_balance: history.currentATokenBalance,
         timestamp
       });
