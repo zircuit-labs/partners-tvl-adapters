@@ -36,7 +36,7 @@ const mapUserReservesToCSVRows = async (
   return csvRows;
 };
 
-const OUTPUT_DIR = path.resolve(process.cwd(), "out");
+const OUTPUT_DIR = path.resolve(__dirname, "../out");
 const OUTPUT_PATH = path.join(OUTPUT_DIR, "tvl-snapshot-zerolend.csv");
 const getData = async () => {
   const csvRows: CSVRow[] = [];
