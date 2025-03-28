@@ -1,16 +1,9 @@
-import * as fs from 'fs';
-import { write } from 'fast-csv';
-import * as path from "path";
-import { CHAINS, PROTOCOLS } from "./sdk/config";
+import { CHAINS, PROTOCOLS, CSVRow } from "./sdk/config";
 import { getUserReservesWithHistory, UserReserveData } from "./sdk/subgraphDetails";
+import { writeCSVOutput } from "./sdk/utils";
 
-interface CSVRow {
-  user: string;
-  token_address: string;
-  block: number;
-  token_balance: string;
-  timestamp: number;
-}
+// Constants
+const OUTPUT_FILE = '../out/tvl-snapshot-zerolend.csv'
 
 const mapUserReservesToCSVRows = async (
   userReserves: UserReserveData[]
@@ -34,8 +27,6 @@ const mapUserReservesToCSVRows = async (
   return csvRows;
 };
 
-const OUTPUT_DIR = path.resolve(__dirname, "../out");
-const OUTPUT_PATH = path.join(OUTPUT_DIR, "tvl-snapshot-zerolend.csv");
 const getData = async () => {
   const csvRows: CSVRow[] = [];
 
@@ -50,22 +41,11 @@ const getData = async () => {
       csvRows.push(...rows);
       console.log(`Generated ${rows.length} CSV records`);
     }
+
+    await writeCSVOutput(csvRows, OUTPUT_FILE);
   } catch (error) {
     console.error(`Error processing in fetching data:`, error);
   }
-
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-
-  const ws = fs.createWriteStream(OUTPUT_PATH);
-
-  write(csvRows, { headers: true })
-    .pipe(ws)
-    .on('finish', () => {
-      console.log("CSV file has been written to:", OUTPUT_PATH
-
-      );
-      console.log(`Total records: ${csvRows.length}`);
-    });
 };
 
 getData()
