@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 import { CHAINS, PROTOCOLS, SUBGRAPH_URLS } from "./config";
+import { withRetry } from "./utils";
 
 export interface ExchangeRate {
     id: string;
@@ -36,10 +37,19 @@ const paginatedQuery = async <T>(
             .replace('{{blockNumber}}', blockNumber.toString())
             .replace('{{limit}}', PAGE_SIZE.toString());
 
-        const response = await fetch(subgraphUrl, {
-            method: "POST",
-            body: JSON.stringify({ query }),
-            headers: { "Content-Type": "application/json" },
+        const response = await withRetry(async () => {
+            const res = await fetch(subgraphUrl, {
+                method: "POST",
+                body: JSON.stringify({ query }),
+                headers: { "Content-Type": "application/json" },
+                keepalive: true,
+            });
+
+            if (!res.ok) {
+                throw new Error(`Subgraph request failed with status ${res.status}`);
+            }
+
+            return res;
         });
         
         const data = await response.json();
