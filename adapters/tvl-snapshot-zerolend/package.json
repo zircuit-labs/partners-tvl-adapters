@@ -13,7 +13,6 @@
   "license": "ISC",
   "dependencies": {
     "@types/big.js": "^6.2.2",
-    "axios": "^1.8.4",
     "big.js": "^6.2.1",
     "bignumber.js": "^9.1.2",
     "csv-parser": "^3.0.0",
