@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CSVRow } from './sdk/config';
-import { writeCSVOutput } from './sdk/utils';
+import { writeCSVOutput, withRetry } from './sdk/utils';
 import { parseUnits } from 'viem';
 
 // API Constants
@@ -38,7 +38,7 @@ async function fetchData(symbol: string, timestamp: string | null = null) {
 
     console.log(`Fetching ${symbol} data from: ${url}`);
 
-    const response = await axios.get(url);
+    const response = await withRetry(() => axios.get(url));
     const data = response.data;
 
     // Check if the request was successful

@@ -1,5 +1,5 @@
 import { CHAINS, PROTOCOLS, SUBGRAPH_URLS } from "./config";
-
+import { withRetry } from "./utils";
 export interface ATokenBalanceHistory {
   currentATokenBalance: string;
   timestamp: string;
@@ -64,20 +64,24 @@ const paginatedQuery = async <T>(
       limit: PAGE_SIZE,
     };
 
-    const response = await fetch(subgraphUrl, {
-      method: "POST",
-      body: JSON.stringify({ query: queryTemplate, variables }),
-      headers: { "Content-Type": "application/json" },
+    const response = await withRetry(async () => {
+      const res = await fetch(subgraphUrl, {
+        method: "POST",
+        body: JSON.stringify({ query: queryTemplate, variables }),
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Subgraph request failed with status ${res.status}`);
+      }
+
+      return res;
     });
 
     const data = await response.json();
-
-    if (!data.data || !data.data[resultKey]) {
-      console.error("Error in response:", data);
-      break;
-    }
-
     const items = data.data[resultKey];
+
     result.push(...items);
 
     fetchNext = items.length === PAGE_SIZE;
