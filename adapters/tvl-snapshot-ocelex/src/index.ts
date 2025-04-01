@@ -15,6 +15,7 @@ import {
   prepareBlockNumbersArr,
   getAllPairData,
   Semaphore,
+  isRelevantPair,
 } from './sdk/utils';
 import {
   getUserClassicPositions,
@@ -50,14 +51,29 @@ const processPositionData = async (block: number): Promise<PositionData | null> 
       return null;
     }
 
+    const filteredClassicPositions = classicPositions.filter((pos) => isRelevantPair(pos.token0.address, pos.token1.address));
+    const filteredConcentratedPositions = concentratedPositions.filter((pos) => isRelevantPair(pos.token0.address, pos.token1.address));
+    const filteredGaugePositions = gaugePositions.map(user => ({
+      ...user,
+      liquidityPositions: user.liquidityPositions.filter((pos: GaugeLiquidityPosition) => 
+        isRelevantPair(pos.gauge.token0.id, pos.gauge.token1.id)
+      )
+    })).filter(user => user.liquidityPositions.length > 0);
+    const filteredPreMiningPositions = preMiningPositions.map(user => ({
+      ...user,
+      liquidityPositions: user.liquidityPositions.filter((pos: PreMiningPosition) => 
+        isRelevantPair(pos.premining.token0.id, pos.premining.token1.id)
+      )
+    })).filter(user => user.liquidityPositions.length > 0);
+
     const pairs = [
       ...new Set([
-        ...classicPositions.map((pos) => pos.pair),
-        ...concentratedPositions.map((pos) => pos.pair),
-        ...gaugePositions.flatMap((user) =>
+        ...filteredClassicPositions.map((pos) => pos.pair),
+        ...filteredConcentratedPositions.map((pos) => pos.pair),
+        ...filteredGaugePositions.flatMap((user) =>
           user.liquidityPositions.map((pos: GaugeLiquidityPosition) => pos.gauge.pool),
         ),
-        ...preMiningPositions.flatMap((user) =>
+        ...filteredPreMiningPositions.flatMap((user) =>
           user.liquidityPositions.map((pos: PreMiningPosition) => pos.premining.pool),
         ),
       ]),
@@ -67,10 +83,10 @@ const processPositionData = async (block: number): Promise<PositionData | null> 
       block,
       timestamp,
       pairs,
-      gaugePositions,
-      classicPositions,
-      concentratedPositions,
-      preMiningPositions,
+      gaugePositions: filteredGaugePositions,
+      classicPositions: filteredClassicPositions,
+      concentratedPositions: filteredConcentratedPositions,
+      preMiningPositions: filteredPreMiningPositions,
     };
   } catch (error) {
     console.error(`Error processing block ${block}:`, error);
