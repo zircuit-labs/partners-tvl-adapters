@@ -12,6 +12,34 @@ export const enum CONTRACTS {
   PAIR_LENS = '0x0b4158e310AE236042203322f618Cde047289b3F',
 }
 
+// Relevant Token Combinations to Track
+const USDC_ADDRESS = '0x3b952c8c9c44e8fe201e2b26f6b2200203214cff';
+const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
+const ZRC_ADDRESS = '0xfd418e42783382e86ae91e445406600ba144d162';
+const WBTC_ADDRESS = '0x19df5689cfce64bc2a55f7220b0cd522659955ef';
+const USDT_ADDRESS = '0x46dda6a5a559d861c06ec9a95fb395f5c3db0742';
+export const RELEVANT_PAIRS: {
+  token0: string;
+  token1: string;
+}[] = [
+  {
+    token0: WETH_ADDRESS,
+    token1: ZRC_ADDRESS,
+  },
+  {
+    token0: WETH_ADDRESS,
+    token1: WBTC_ADDRESS,
+  },
+  {
+    token0: WETH_ADDRESS,
+    token1: USDT_ADDRESS,
+  },
+  {
+    token0: USDC_ADDRESS,
+    token1: USDT_ADDRESS,
+  },
+];
+
 // SUBGRAPH URLs
 export const SUBGRAPH_URLS = {
   [CHAINS.ZIRCUIT]: {
