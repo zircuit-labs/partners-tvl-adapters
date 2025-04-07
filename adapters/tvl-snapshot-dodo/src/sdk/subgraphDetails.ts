@@ -195,6 +195,7 @@ const fmt = {
   fractionGroupSeparator: '\xA0',        // non-breaking space
   suffix: ''
 }
-function _BigInt(val: any, decimals: any): bigint {
-  return BigInt(parseUnits(BigNumber(val).toFormat(fmt), Number(decimals)).toString())
+function _BigInt(val: string | number, decimals: string | number): bigint {
+  const bn = new BigNumber(val)
+  return BigInt(parseUnits(bn.toFormat(fmt), Number(decimals)).toString())
 }
