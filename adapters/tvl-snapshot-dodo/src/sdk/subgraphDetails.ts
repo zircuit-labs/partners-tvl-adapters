@@ -5,7 +5,7 @@ import {
   SUBGRAPH_URLS, UserFormattedPosition,
 } from './config';
 import { parseUnits } from 'viem';
-import { BigNumber } from 'bignumber.js';
+import BigNumber from 'bignumber.js';
 import { withRetry } from './utils';
 
 const paginatedQuery = async <T>(
