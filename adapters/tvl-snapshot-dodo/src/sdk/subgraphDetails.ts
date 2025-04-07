@@ -196,6 +196,5 @@ const fmt = {
   suffix: ''
 }
 function _BigInt(val: string | number, decimals: string | number): bigint {
-  const bn = new BigNumber(val)
-  return BigInt(parseUnits(bn.toFormat(fmt), Number(decimals)).toString())
+  return BigInt(parseUnits(BigNumber(val).toFormat(fmt), Number(decimals)).toString())
 }
