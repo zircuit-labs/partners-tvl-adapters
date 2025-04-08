@@ -4,7 +4,7 @@ import {
     SUBGRAPH_URLS, UserFormattedPosition,
 } from './config';
 import { parseUnits } from 'viem';
-import { withRetry } from './utils';
+import { withRetry, isRelevantPair } from './utils';
 
 const paginatedQuery = async <T>(
     subgraphUrl: string,
@@ -119,7 +119,9 @@ export const getUserClassicPositions = async (
 
     const positions = await paginatedQuery<any>(subgraphUrl, queryTemplate, blockNumber, 'liquidityPositions');
 
-    return positions.map((position) => {
+    const filteredPositions = positions.filter((position) => isRelevantPair(position.pair.token0.id, position.pair.token1.id));
+
+    return filteredPositions.map((position) => {
         const userShare =
             (BigInt(parseUnits(position.liquidityTokenBalance, 18).toString()) * BigInt(1e18)) /
             BigInt(parseUnits(position.pair.totalSupply, 18).toString());
