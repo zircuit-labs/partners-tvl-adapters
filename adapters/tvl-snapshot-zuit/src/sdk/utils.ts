@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { write } from 'fast-csv';
-import { CSVRow, TokenBalance } from './config';
+import { CSVRow, TokenBalance, RELEVANT_PAIRS } from './config';
 
 export const prepareBlockNumbersArr = (
   startBlockNumber: number,
@@ -101,4 +101,12 @@ export const withRetry = async <T>(
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+};
+
+export const isRelevantPair = (token0: string, token1: string): boolean => {
+  return RELEVANT_PAIRS.some(
+    (pair) =>
+      (pair.token0.toLowerCase() === token0.toLowerCase() && pair.token1.toLowerCase() === token1.toLowerCase()) ||
+      (pair.token0.toLowerCase() === token1.toLowerCase() && pair.token1.toLowerCase() === token0.toLowerCase()),
+  );
 };
