@@ -12,6 +12,11 @@ export const enum CONTRACTS {
   PAIR_LENS = '0x0b4158e310AE236042203322f618Cde047289b3F',
 }
 
+export const GENESIS_BLOCK = 4904075;
+export const INTERVAL = 1800;
+
+export const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
+
 // Relevant Token Combinations to Track
 const USDC_ADDRESS = '0x3b952c8c9c44e8fe201e2b26f6b2200203214cff';
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';

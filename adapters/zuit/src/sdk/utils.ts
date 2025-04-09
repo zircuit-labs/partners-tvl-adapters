@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { write } from 'fast-csv';
-import { CSVRow, TokenBalance, RELEVANT_PAIRS } from './config';
+import { CSVRow, TokenBalance, RELEVANT_PAIRS, GENESIS_BLOCK, INTERVAL } from './config';
+import { PublicClient } from 'viem';
 
 export const prepareBlockNumbersArr = (
   startBlockNumber: number,
@@ -109,4 +110,17 @@ export const isRelevantPair = (token0: string, token1: string): boolean => {
       (pair.token0.toLowerCase() === token0.toLowerCase() && pair.token1.toLowerCase() === token1.toLowerCase()) ||
       (pair.token0.toLowerCase() === token1.toLowerCase() && pair.token1.toLowerCase() === token0.toLowerCase()),
   );
+};
+
+export const getEndBlock = async (client: PublicClient, endBlockInput: number | undefined): Promise<number> => {
+  const latestBlock = endBlockInput ? endBlockInput : await client.getBlockNumber()
+  const endBlockDifference = Number(latestBlock) - GENESIS_BLOCK;
+  const roundedEndDifference = Math.floor(endBlockDifference / INTERVAL) * INTERVAL;
+  return GENESIS_BLOCK + roundedEndDifference;
+};
+
+export const getInitialBlock = (initialBlockInput: number | undefined): number => {
+  const initialBlockDifference = initialBlockInput ? initialBlockInput - GENESIS_BLOCK : 0;
+  const roundedInitialDifference = Math.floor(initialBlockDifference / INTERVAL) * INTERVAL;
+  return GENESIS_BLOCK + roundedInitialDifference;
 };
