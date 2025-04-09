@@ -23,7 +23,7 @@ export interface BalanceChange {
 const paginatedQuery = async <T>(
     subgraphUrl: string,
     queryTemplate: string,
-    blockNumber: number,
+    args: Record<string, any>,
     resultKey: string // e.g., 'exchangeRates' or 'balanceChanges'
 ): Promise<T[]> => {
     let skip = 0;
@@ -32,10 +32,13 @@ const paginatedQuery = async <T>(
     const PAGE_SIZE = 1000;
 
     while (fetchNext) {
-        const query = queryTemplate
+        let query = queryTemplate
             .replace('{{skip}}', skip.toString())
-            .replace('{{blockNumber}}', blockNumber.toString())
             .replace('{{limit}}', PAGE_SIZE.toString());
+
+        for (const [key, value] of Object.entries(args)) {
+            query = query.replace(`{{${key}}}`, value.toString());
+        }
 
         const response = await withRetry(async () => {
             const res = await fetch(subgraphUrl, {
@@ -86,7 +89,7 @@ export const getExchangeRatesBeforeBlock = async (
     return paginatedQuery<ExchangeRate>(
         subgraphUrl,
         queryTemplate,
-        blockNumber,
+        { blockNumber },
         'exchangeRates'
     );
 }
@@ -111,7 +114,7 @@ export const getBalanceChangesBeforeBlock = async (
     return paginatedQuery<BalanceChange>(
         subgraphUrl,
         queryTemplate,
-        blockNumber,
+        { blockNumber },
         'balanceChanges'
     );
 }
