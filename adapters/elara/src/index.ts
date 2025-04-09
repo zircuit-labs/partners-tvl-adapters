@@ -1,4 +1,4 @@
-import { CHAINS, PROTOCOLS } from "./sdk/config";
+import { CHAINS, PROTOCOLS, INTERVAL, OUTPUT_FILE } from "./sdk/config";
 import { getExchangeRatesBeforeBlock, getBalanceChangesBeforeBlock, getLPValueByUser } from "./sdk/subgraphDetails";
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -7,8 +7,9 @@ import { getExchangeRatesBeforeBlock, getBalanceChangesBeforeBlock, getLPValueBy
 import fs from 'fs';
 import { write } from 'fast-csv';
 import path from "path";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, PublicClient } from "viem";
 import { zircuit } from "viem/chains";
+import { getEndBlock, getInitialBlock } from "./sdk/utils";
 
 interface CSVRow {
   user: string;
@@ -17,6 +18,9 @@ interface CSVRow {
   token_balance: string;
   timestamp: number;
 }
+
+const initialBlockInput = process.argv[2] ? parseInt(process.argv[2]) : undefined; // Block where we start to pick up data
+const endBlockInput = process.argv[3] ? parseInt(process.argv[3]) : undefined; // Block where we stop to pick up data
 
 const prepareBlockNumbersArr = (
   startBlockNumber: number,
@@ -33,34 +37,27 @@ const prepareBlockNumbersArr = (
   return blockNumbers;
 };
 
-const getEndBlock = async () => {
-  const client = createPublicClient({
-    chain: zircuit,
-    transport: http()
-  })
-  const endBlock = Number(await client.getBlockNumber())
-  return endBlock
-}
-
-const INITIAL_BLOCK = 6026314; // Creation block of oldest Elara pool
-const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
-
-const OUTPUT_FILE = "../out/tvl-snapshot-elara.csv";
-
 const getData = async () => {
   const csvRows: CSVRow[] = [];
 
-  const END_BLOCK = await getEndBlock()
-  console.log(`Fetching data from subgraph... end block: ${END_BLOCK}`)
+  const client = createPublicClient({ chain: zircuit, transport: http() })
+
+  const initialBlock = getInitialBlock(initialBlockInput)
+  let endBlock = await getEndBlock(client as PublicClient, undefined)
+
+  console.log(`Analyzing data from block ${initialBlock} to ${endBlock}`)
   
   const [exchangeRates, balanceChanges] = await Promise.all([
-    getExchangeRatesBeforeBlock(END_BLOCK, CHAINS.ZIRCUIT, PROTOCOLS.ELARA),
-    getBalanceChangesBeforeBlock(END_BLOCK, CHAINS.ZIRCUIT, PROTOCOLS.ELARA)
+    getExchangeRatesBeforeBlock(endBlock, CHAINS.ZIRCUIT, PROTOCOLS.ELARA),
+    getBalanceChangesBeforeBlock(endBlock, CHAINS.ZIRCUIT, PROTOCOLS.ELARA)
   ])
 
   // We are limited by the subgraph, so the end block is the largest block of exchange rates
-  const endBlock = exchangeRates[exchangeRates.length - 1].blockNumber
-  const snapshotBlocks = prepareBlockNumbersArr(INITIAL_BLOCK, INTERVAL, Number(endBlock))
+  endBlock = Math.min(
+    await getEndBlock(client as PublicClient, endBlockInput),
+    await getEndBlock(client as PublicClient, Number(exchangeRates[exchangeRates.length - 1].blockNumber))
+  )
+  const snapshotBlocks = prepareBlockNumbersArr(initialBlock, INTERVAL, endBlock)
 
   for (let [index, block] of snapshotBlocks.entries()) {
     console.log(`Processing block ${block}: ${index + 1} of ${snapshotBlocks.length}`);
@@ -93,6 +90,7 @@ const getData = async () => {
   const ws = fs.createWriteStream(outputPath);
   write(csvRows, { headers: true }).pipe(ws).on('finish', () => {
     console.log("CSV file has been written to:", outputPath);
+    console.log("Exported from block", initialBlock, "to", endBlock);
   });
 };
 
