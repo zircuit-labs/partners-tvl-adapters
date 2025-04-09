@@ -8,6 +8,8 @@ import {
   GaugeLiquidityPosition,
   PreMiningPosition,
   LensResponse,
+  INTERVAL,
+  OUTPUT_FILE,
 } from './sdk/config';
 import {
   processTokenBalance,
@@ -16,6 +18,8 @@ import {
   getAllPairData,
   Semaphore,
   isRelevantPair,
+  getInitialBlock,
+  getEndBlock,
 } from './sdk/utils';
 import {
   getUserClassicPositions,
@@ -28,9 +32,9 @@ import {
 // Constants
 const BATCH_SIZE = 40; // Process 40 blocks every 10 seconds
 const RATE_LIMIT_WINDOW = 10000; // 10 seconds in ms
-const INITIAL_BLOCK = 4904075; // Block where we start to pick up data
-const INTERVAL = 1800; // Hourly interval, Zircuit block time is 2 seconds
-const OUTPUT_FILE = '../out/tvl-snapshot-ocelex.csv';
+
+const initialBlockInput = process.argv[2] ? parseInt(process.argv[2]) : undefined; // Block where we start to pick up data
+const endBlockInput = process.argv[3] ? parseInt(process.argv[3]) : undefined; // Block where we stop to pick up data
 
 const processPositionData = async (block: number): Promise<PositionData | null> => {
   try {
@@ -196,9 +200,13 @@ const getData = async () => {
 
   try {
     const client = createPublicClient({ chain: zircuit, transport: http() });
-    const END_BLOCK = Number(await client.getBlockNumber());
-    const snapshotBlocks = prepareBlockNumbersArr(INITIAL_BLOCK, INTERVAL, END_BLOCK);
 
+    const initialBlock = getInitialBlock(initialBlockInput);
+    const endBlock = await getEndBlock(client as PublicClient, endBlockInput);
+
+    const snapshotBlocks = prepareBlockNumbersArr(initialBlock, INTERVAL, endBlock);
+
+    console.log(`Analyzing interval: ${initialBlock} - ${endBlock}`);
     console.log(`Will process ${snapshotBlocks.length} blocks in batches of ${BATCH_SIZE}`);
 
     // Process blocks in batches

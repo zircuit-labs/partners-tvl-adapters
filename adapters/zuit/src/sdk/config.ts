@@ -14,6 +14,11 @@ export const SUBGRAPH_URLS = {
     }
 }
 
+export const GENESIS_BLOCK = 1369131;
+export const INTERVAL = 1800;
+
+export const OUTPUT_FILE = '../out/tvl-snapshot-zuit.csv';
+
 // Relevant Token Combinations to Track
 const USDC_ADDRESS = '0x3b952c8c9c44e8fe201e2b26f6b2200203214cff';
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
