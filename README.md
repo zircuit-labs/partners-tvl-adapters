@@ -16,12 +16,12 @@ Onboarding checklist:
         3. Use the slugs `zircuit-testnet` and `zircuit` when deploying the config
 2.  Prepare Subquery query code according to the Data Requirement section below.
 3.  Submit your response as a Pull Request to: https://github.com/zircuit-labs/partners-tvl-adapters.git
-    1. Copy the `example` adapter and create a new one inside the `adapters` folder following this pattern: `tvl-snapshot-<protocol_name>`
+    1. Copy the `example` adapter and create a new one inside the `adapters` folder following this pattern: `<protocol_name>`
         - This code is just an example, you can use it as a reference to create your own adapter. Protocols are required to implement efficient adapters.
     2. Check the `adapters/elara/src/index.ts` file for the correct format of the output file, conforming to the interfaces defined in the file.
     3. `index.ts` is the entry point for the adapter, it is responsible for fetching the data and converting it to the correct format. We should be able to run:
         ```
-        cd adapters/tvl-snapshot-<protocol_name>
+        cd adapters/<protocol_name>
         npm install
         npm run compile
         npm run start
