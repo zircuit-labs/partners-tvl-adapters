@@ -3,8 +3,8 @@ import path from 'path';
 import { write } from 'fast-csv';
 import { CSVRow, TokenBalance, LensResponse, RELEVANT_PAIRS } from './config';
 import { PublicClient, type Abi } from 'viem';
-import { CONTRACTS } from './config';
-import { PAIR_API_ABI } from './abis/PairAPIABI';
+import { CONTRACTS, GENESIS_BLOCK, INTERVAL } from './config';
+import { PAIR_API_ABI } from '../sdk/abis/PairAPIABI';
 
 export const getAllPairData = async (
   pairs: string[],
@@ -132,4 +132,17 @@ export const isRelevantPair = (token0: string, token1: string): boolean => {
       (pair.token0.toLowerCase() === token0.toLowerCase() && pair.token1.toLowerCase() === token1.toLowerCase()) ||
       (pair.token0.toLowerCase() === token1.toLowerCase() && pair.token1.toLowerCase() === token0.toLowerCase()),
   );
+};
+
+export const getEndBlock = async (client: PublicClient, endBlockInput: number | undefined): Promise<number> => {
+  const latestBlock = endBlockInput ? endBlockInput : await client.getBlockNumber()
+  const endBlockDifference = Number(latestBlock) - GENESIS_BLOCK;
+  const roundedEndDifference = Math.floor(endBlockDifference / INTERVAL) * INTERVAL;
+  return GENESIS_BLOCK + roundedEndDifference;
+};
+
+export const getInitialBlock = (initialBlockInput: number | undefined): number => {
+  const initialBlockDifference = initialBlockInput ? initialBlockInput - GENESIS_BLOCK : 0;
+  const roundedInitialDifference = Math.floor(initialBlockDifference / INTERVAL) * INTERVAL;
+  return GENESIS_BLOCK + roundedInitialDifference;
 };
