@@ -4,7 +4,7 @@ This repository aims to serve as a source for all adapters we use to fetch TVL b
 
 ## How to add new adapters?
 
-The process to add a new adapter is to provide a script similar to [adapter example](https://github.com/zircuit-labs/partners-tvl-adapters/tree/main/adapters/tvl-snapshot-elara/).
+The process to add a new adapter is to provide a script similar to [adapter example](https://github.com/zircuit-labs/partners-tvl-adapters/tree/main/adapters/elara/).
 
 Onboarding checklist:
 
@@ -18,7 +18,7 @@ Onboarding checklist:
 3.  Submit your response as a Pull Request to: https://github.com/zircuit-labs/partners-tvl-adapters.git
     1. Copy the `example` adapter and create a new one inside the `adapters` folder following this pattern: `tvl-snapshot-<protocol_name>`
         - This code is just an example, you can use it as a reference to create your own adapter. Protocols are required to implement efficient adapters.
-    2. Check the `adapters/tvl-snapshot-elara/src/index.ts` file for the correct format of the output file, conforming to the interfaces defined in the file.
+    2. Check the `adapters/elara/src/index.ts` file for the correct format of the output file, conforming to the interfaces defined in the file.
     3. `index.ts` is the entry point for the adapter, it is responsible for fetching the data and converting it to the correct format. We should be able to run:
         ```
         cd adapters/tvl-snapshot-<protocol_name>

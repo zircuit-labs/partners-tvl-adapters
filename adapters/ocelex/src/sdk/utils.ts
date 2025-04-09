@@ -4,7 +4,7 @@ import { write } from 'fast-csv';
 import { CSVRow, TokenBalance, LensResponse, RELEVANT_PAIRS } from './config';
 import { PublicClient, type Abi } from 'viem';
 import { CONTRACTS } from './config';
-import { PAIR_API_ABI } from '../sdk/abis/PairAPIABI';
+import { PAIR_API_ABI } from './abis/PairAPIABI';
 
 export const getAllPairData = async (
   pairs: string[],
