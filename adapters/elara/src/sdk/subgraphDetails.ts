@@ -127,34 +127,52 @@ interface TokenValue {
 type UserTokenBalances = Map<string, BigNumber>;
 type UsersSnapshots = Map<string, Map<string, TokenValue>>;
 
-export const getBlockTimestamp = async (blockNumber: number): Promise<number> => {
-    const query = `query TimestampForBlock {
-      blocks(
-        first: 1
-        orderBy: timestamp
-        orderDirection: desc
-        where: {number_lte: ${blockNumber}}
-      ) {
-        id
-        number
-        timestamp
-      }
-    }`;
+export const getBlockTimestamps = async (blocks: number[]): Promise<Record<number, number>> => {
+    const BATCH_SIZE = 100; // Process 100 blocks at a time
+    const result: Record<number, number> = {};
 
-    return await withRetry(async () => {
-      const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+    // Process blocks in batches
+    for (let i = 0; i < blocks.length; i += BATCH_SIZE) {
+        const batchBlocks = blocks.slice(i, i + BATCH_SIZE);
+        const query = `query TimestampForBlock {
+          blocks(
+            orderBy: timestamp
+            orderDirection: asc
+            where: {number_in: ${JSON.stringify(batchBlocks)}}
+          ) {
+            id
+            number
+            timestamp
+          }
+        }`;
 
-      if (!response.ok) {
-        throw new Error(`Subgraph request failed with status ${response.status}`);
-      }
+        const batchResult = await withRetry(async () => {
+          const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
+            method: 'POST',
+            body: JSON.stringify({ query }),
+            headers: { 'Content-Type': 'application/json' },
+          });
 
-      const data = await response.json();
-      return Number(data.data.blocks[0].timestamp);
-    });
+          if (!response.ok) {
+            throw new Error(`Subgraph request failed with status ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data.data.blocks;
+        });
+
+        // Add batch results to the main result object
+        batchResult.forEach((block: { number: number; timestamp: number }) => {
+          result[block.number] = block.timestamp;
+        });
+
+        // Add a small delay between batches to avoid rate limiting
+        if (i + BATCH_SIZE < blocks.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    return result;
   };
 
 export const getLPValueByUser = (
@@ -162,7 +180,7 @@ export const getLPValueByUser = (
     balanceChanges: BalanceChange[]
 ): UsersSnapshots => {
     // Sort exchange rates by timestamp to get latest rates
-    const sortedRates = exchangeRates.sort((a, b) => Number(b.blockTimestamp - a.blockTimestamp));
+    const sortedRates = exchangeRates.sort((a, b) => Number(b.blockTimestamp) - Number(a.blockTimestamp));
     const result: UsersSnapshots = new Map();
     
     // First calculate final token balances for each user
