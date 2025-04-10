@@ -1,5 +1,5 @@
 import { CHAINS, PROTOCOLS, INTERVAL, OUTPUT_FILE } from "./sdk/config";
-import { getExchangeRatesBeforeBlock, getBalanceChangesBeforeBlock, getLPValueByUser } from "./sdk/subgraphDetails";
+import { getExchangeRatesBeforeBlock, getBalanceChangesBeforeBlock, getLPValueByUser, getBlockTimestamp } from "./sdk/subgraphDetails";
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
@@ -62,6 +62,8 @@ const getData = async () => {
   for (let [index, block] of snapshotBlocks.entries()) {
     console.log(`Processing block ${block}: ${index + 1} of ${snapshotBlocks.length}`);
 
+    const timestamp = await getBlockTimestamp(block);
+
     const lpValueByUsers = getLPValueByUser(
       exchangeRates.filter(rate => rate.blockNumber <= block),
       balanceChanges.filter(change => change.blockNumber <= block))
@@ -75,7 +77,7 @@ const getData = async () => {
           token_address: lpToken,
           block,
           token_balance: lpValueStr.value.toFixed(0),
-          timestamp: lpValueStr.timestamp,
+          timestamp,
         });
       });
     });

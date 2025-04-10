@@ -127,6 +127,36 @@ interface TokenValue {
 type UserTokenBalances = Map<string, BigNumber>;
 type UsersSnapshots = Map<string, Map<string, TokenValue>>;
 
+export const getBlockTimestamp = async (blockNumber: number): Promise<number> => {
+    const query = `query TimestampForBlock {
+      blocks(
+        first: 1
+        orderBy: timestamp
+        orderDirection: desc
+        where: {number_lte: ${blockNumber}}
+      ) {
+        id
+        number
+        timestamp
+      }
+    }`;
+
+    return await withRetry(async () => {
+      const response = await fetch(SUBGRAPH_URLS[CHAINS.ZIRCUIT][PROTOCOLS.BLOCKS], {
+        method: 'POST',
+        body: JSON.stringify({ query }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Subgraph request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return Number(data.data.blocks[0].timestamp);
+    });
+  };
+
 export const getLPValueByUser = (
     exchangeRates: ExchangeRate[],
     balanceChanges: BalanceChange[]
