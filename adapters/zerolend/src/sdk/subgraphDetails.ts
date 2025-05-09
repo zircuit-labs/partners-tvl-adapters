@@ -68,7 +68,10 @@ const paginatedQuery = async <T>(
       const res = await fetch(subgraphUrl, {
         method: "POST",
         body: JSON.stringify({ query: queryTemplate, variables }),
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": process.env.ZEROLEND_API_KEY || ""
+         },
         keepalive: true,
       });
 

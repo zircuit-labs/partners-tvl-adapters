@@ -8,7 +8,7 @@ export const enum PROTOCOLS {
 export const SUBGRAPH_URLS = {
   [CHAINS.ZIRCUIT]: {
     [PROTOCOLS.ZEROLEND]:
-      "https://api.goldsky.com/api/public/project_clsk1wzatdsls01wchl2e4n0y/subgraphs/zerolend-zircuit/1.0.0/gn",
+      "https://app.sentio.xyz/api/v1/graphql/zerolendxyz/zircuit",
   },
 };
 
